@@ -1,0 +1,41 @@
+services:								#컨테이너들을 지정
+  simple-chat-server:					#컨테이너명
+    container_name: simple-chat-server
+    ports:
+      - "8080:8080"
+    image: simple-chat-server
+    networks:
+      - docker-network
+    depends_on:							#다른 컨테이너에 의존적으로 설정
+      simple-chat-db:
+        condition: service_healthy		#simple-chat-db가 healthy 상태일때만 실행
+    environment:
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+  simple-chat-db:						#컨테이너명
+    container_name: simple-chat-db	#컨테이너명 직접 명시
+    image: mysql:latest					#해당 컨테이너가 가질 이미지
+    restart: always						#재시작 옵션
+    volumes:							#볼륨 설정
+      - mysql_volume:/var/lib/mysql
+    environment:						#환경 변수 설정
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:								#Docker와 연결할 포트
+      - "3306:3306"
+    networks:							#컨테이너를 그룹화하는 네트워크
+      - docker-network
+    healthcheck:						#컨테이너가 healthy한지 판단할 기준
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+networks:								#네트워크 생성
+  docker-network:
+    driver: bridge
+
+volumes:								#볼륨 생성
+  mysql_volume:
+    driver: local
