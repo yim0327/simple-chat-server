@@ -1,6 +1,9 @@
 services:								#컨테이너들을 지정
   simple-chat-server:					#컨테이너명
     container_name: simple-chat-server
+    build:
+      context: .
+      dockerfile: Dockerfile            #직접 Dockerfile 읽어서 이미지 빌드 (도커 허브 X)
     ports:
       - "8080:8080"
     image: simple-chat-server
