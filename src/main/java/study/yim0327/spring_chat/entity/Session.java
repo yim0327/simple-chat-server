@@ -2,6 +2,7 @@ package study.yim0327.spring_chat.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
@@ -12,6 +13,7 @@ import java.time.LocalDateTime;
  * 세션
  * - WebSocket 연결 1회를 나타냄 (브라우저 탭 단위)
  */
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "session")
@@ -60,6 +62,13 @@ public class Session {
     public void disconnect() {
         this.disconnectedAt = LocalDateTime.now();
         this.active = false;
+    }
+
+    public static Session create(String clientId, ActiveNickname activeNickname) {
+        Session s = new Session();
+        s.clientId = clientId;
+        s.activeNickname = activeNickname;
+        return s;
     }
 
 }
