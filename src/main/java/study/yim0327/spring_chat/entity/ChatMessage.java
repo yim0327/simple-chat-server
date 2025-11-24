@@ -31,6 +31,11 @@ public class ChatMessage {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /** 메시지 타입 */
+    @Enumerated(EnumType.STRING) // Enum 이름을 문자열 그대로 DB 저장
+    @Column(name = "message_type", nullable = false, length = 10)
+    private MessageType messageType;
+
     /**
      * 채팅방 (N:1)
      * - 여러 메시지가 하나의 채팅방에 속함
