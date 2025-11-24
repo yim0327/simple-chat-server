@@ -2,10 +2,12 @@ package study.yim0327.spring_chat.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(
@@ -36,5 +38,12 @@ public class ActiveNickname {
     @JoinColumn(name = "room_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE) // 방 삭제 시 함께 삭제
     private ChatRoom chatRoom;
+
+    public static ActiveNickname create(String nickname, ChatRoom chatRoom) {
+        ActiveNickname an = new ActiveNickname();
+        an.activeNickname = nickname;
+        an.chatRoom = chatRoom;
+        return an;
+    }
 
 }

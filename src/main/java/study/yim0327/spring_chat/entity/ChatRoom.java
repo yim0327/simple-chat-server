@@ -2,10 +2,12 @@ package study.yim0327.spring_chat.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "chat_room")
@@ -44,6 +46,13 @@ public class ChatRoom {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public static ChatRoom create(String roomName, String roomCode) {
+        ChatRoom room = new ChatRoom();
+        room.roomName = roomName;
+        room.roomCode = roomCode;
+        return room;
     }
 
 }
