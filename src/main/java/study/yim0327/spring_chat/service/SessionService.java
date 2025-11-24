@@ -52,6 +52,31 @@ public class SessionService {
         );
     }
 
+    @Transactional
+    public void disconnect(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new IllegalArgumentException("세션을 찾을 수 없습니다."));
+
+        if (!session.isActive()) {
+            // 이미 종료된 세션이면 그냥 리턴하거나, 예외 던질지 선택
+            return;
+        }
+
+        // 세션 상태 변경 (소프트 종료)
+        session.disconnect();  // disconnectedAt, active=false
+
+        // 닉네임 / 방 정보 정리
+        ActiveNickname activeNickname = session.getActiveNickname();
+        Long roomId = activeNickname.getChatRoom().getId();
+        String nickname = activeNickname.getActiveNickname();
+
+        // 활성 닉네임 참조 끊기
+        session.detachActiveNickname();
+
+        // 닉네임 엔티티 삭제
+        activeNicknameRepository.delete(activeNickname);
+    }
+
     private void validateNickname(String nickname) {
         if (nickname == null || nickname.isBlank()) {
             throw new IllegalArgumentException("닉네임은 비어 있을 수 없습니다.");

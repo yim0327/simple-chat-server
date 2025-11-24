@@ -4,8 +4,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
@@ -46,9 +44,8 @@ public class Session {
      * - 한 (활성)닉네임으로 한 세션만 연결됨
      * - 외래키(FK): active_nickname_id
      */
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "active_nickname_id", nullable = false, unique = true)
-    @OnDelete(action = OnDeleteAction.CASCADE) // 퇴장(닉네임 삭제) 시 함께 삭제
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "active_nickname_id", unique = true)
     private ActiveNickname activeNickname;
 
     /** 연결 시 자동 타임스탬프 설정 */
@@ -62,6 +59,11 @@ public class Session {
     public void disconnect() {
         this.disconnectedAt = LocalDateTime.now();
         this.active = false;
+    }
+
+    /** 퇴장 시 active_nickname_id를 null로 하여 분리 */
+    public void detachActiveNickname() {
+        this.activeNickname = null;
     }
 
     public static Session create(String clientId, ActiveNickname activeNickname) {

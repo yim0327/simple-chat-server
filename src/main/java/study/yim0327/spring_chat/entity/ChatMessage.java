@@ -2,12 +2,14 @@ package study.yim0327.spring_chat.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
 @Table(name = "chat_message")
@@ -30,6 +32,11 @@ public class ChatMessage {
     /** 메시지 입력 시각 */
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    /** 메시지 타입 */
+    @Enumerated(EnumType.STRING) // Enum 이름을 문자열 그대로 DB 저장
+    @Column(name = "message_type", nullable = false, length = 10)
+    private MessageType messageType;
 
     /**
      * 채팅방 (N:1)
@@ -54,6 +61,17 @@ public class ChatMessage {
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
+    }
+
+    public static ChatMessage create(MessageType type, String sender, String content,
+                                     ChatRoom chatRoom, Session session) {
+        ChatMessage message = new ChatMessage();
+        message.messageType = type;
+        message.sender = sender;
+        message.content = content;
+        message.chatRoom = chatRoom;
+        message.session = session;
+        return message;
     }
 
 }
