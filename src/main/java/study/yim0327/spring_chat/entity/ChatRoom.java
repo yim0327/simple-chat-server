@@ -48,4 +48,11 @@ public class ChatRoom {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public static ChatRoom create(String roomName, String roomCode) {
+        ChatRoom room = new ChatRoom();
+        room.roomName = roomName;
+        room.roomCode = roomCode;
+        return room;
+    }
+
 }
