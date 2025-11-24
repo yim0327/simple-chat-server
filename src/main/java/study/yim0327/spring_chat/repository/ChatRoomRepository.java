@@ -6,4 +6,6 @@ import study.yim0327.spring_chat.entity.ChatRoom;
 
 @Repository
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
+
+    boolean existsByRoomName(String roomName);
 }
