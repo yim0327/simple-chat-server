@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f3f4f6;
+        }
+
+        .page {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        /* 입장 페이지 */
+        .enter-page {
+            align-items: center;
+            justify-content: center;
+        }
+
+        .enter-card {
+            background: white;
+            padding: 32px 40px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            min-width: 320px;
+            text-align: center;
+        }
+
+        .enter-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .enter-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 4px;
+            color: #374151;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.3);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .error-text {
+            font-size: 12px;
+            color: #ef4444;
+            margin-top: 8px;
+            min-height: 16px;
+        }
+
+        /* 채팅 페이지 */
+        .chat-page {
+            flex-direction: column;
+        }
+
+        .chat-header {
+            height: 56px;
+            padding: 0 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+
+        .chat-header-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .chat-header-sub {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .chat-header-right {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .chat-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            max-width: 70%;
+        }
+
+        .message.me {
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .message-meta {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 2px;
+        }
+
+        .message-bubble {
+            display: inline-block;
+            padding: 8px 12px;
+            border-radius: 12px;
+            background: #e5e7eb;
+            font-size: 14px;
+        }
+
+        .message.me .message-bubble {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .chat-input {
+            padding: 8px 12px;
+            background: white;
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .chat-input input {
+            flex: 1;
+            border-radius: 999px;
+            border: 1px solid #d1d5db;
+            padding: 8px 14px;
+            font-size: 14px;
+        }
+
+        .chat-input input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.3);
+        }
+
+        .chat-input button {
+            border-radius: 999px;
+            padding: 0 18px;
+            border: none;
+            background: #3b82f6;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .chat-input button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 1) 닉네임 입력 페이지 -->
+<div id="enterPage" class="page enter-page active">
+    <div class="enter-card">
+        <div class="enter-title">채팅방 입장</div>
+        <div class="enter-subtitle">닉네임을 입력하고 채팅을 시작하세요.</div>
+
+        <div class="input-group">
+            <label for="nicknameInput">닉네임</label>
+            <input id="nicknameInput" type="text" maxlength="20" placeholder="예: hong-gildong" />
+        </div>
+
+        <button id="enterButton" class="btn btn-primary" onclick="enterRoom()">입장하기</button>
+        <div id="enterError" class="error-text"></div>
+    </div>
+</div>
+
+<!-- 2) 채팅 페이지 -->
+<div id="chatPage" class="page chat-page">
+    <div class="chat-header">
+        <div class="chat-header-left">
+            <div class="chat-header-title">실시간 채팅방</div>
+            <div class="chat-header-sub">통합 채팅방</div> <!-- roomId = 1 (단일 방) -->
+        </div>
+        <div class="chat-header-right">
+            <span id="headerNickname"></span> 님 접속 중
+        </div>
+    </div>
+
+    <div id="chatBody" class="chat-body"></div>
+
+    <div class="chat-input">
+        <input id="messageInput" type="text" placeholder="메시지를 입력하세요" onkeydown="handleKeyDown(event)" />
+        <button id="sendButton" onclick="sendMessage()">전송</button>
+    </div>
+</div>
+
+<script>
+    // === 설정 값 ===
+    const ROOM_ID = 1;
+    const NICKNAME_API_URL = "/api/sessions"; // 백엔드 API URL
+
+    // === 상태 ===
+    let stompClient = null;
+    let sessionId = null;
+    let nickname = null;
+    let connected = false;
+
+    // === 유틸 ===
+    function showPage(pageId) {
+        document.getElementById("enterPage").classList.remove("active");
+        document.getElementById("chatPage").classList.remove("active");
+        document.getElementById(pageId).classList.add("active");
+    }
+
+    function appendMessage(msg) {
+        const chatBody = document.getElementById("chatBody");
+
+        const wrapper = document.createElement("div");
+        wrapper.classList.add("message");
+        if (msg.sessionId === sessionId) {
+            wrapper.classList.add("me");
+        }
+
+        const meta = document.createElement("div");
+        meta.classList.add("message-meta");
+        meta.innerText = `${msg.sender} · ${msg.createdAt ?? ""}`;
+
+        const bubble = document.createElement("div");
+        bubble.classList.add("message-bubble");
+        bubble.innerText = msg.content;
+
+        wrapper.appendChild(meta);
+        wrapper.appendChild(bubble);
+        chatBody.appendChild(wrapper);
+
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    // === 1) 닉네임 입력 후 방 입장 ===
+    async function enterRoom() {
+        const nicknameInput = document.getElementById("nicknameInput");
+        const errorEl = document.getElementById("enterError");
+        const button = document.getElementById("enterButton");
+
+        const value = nicknameInput.value.trim();
+        if (!value) {
+            errorEl.innerText = "닉네임을 입력해주세요.";
+            return;
+        }
+
+        errorEl.innerText = "";
+        button.disabled = true;
+
+        try {
+            const resp = await fetch(NICKNAME_API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    roomId: ROOM_ID,
+                    nickname: value
+                })
+            });
+
+            const json = await resp.json().catch(() => null);
+
+            // HTTP 자체가 실패했거나, 서버에서 success=false 내려온 경우
+            if (!resp.ok || !json || json.success === false) {
+                const message =
+                    (json && json.message) ||
+                    "입장에 실패했습니다.";
+                errorEl.innerText = message;
+                button.disabled = false;
+                return;
+            }
+
+            const info = json.data;   // { sessionId, roomId, nickname }
+
+            sessionId = info.sessionId;
+            nickname = info.nickname;
+
+            document.getElementById("headerNickname").innerText = nickname;
+
+            // 채팅 페이지로 전환
+            showPage("chatPage");
+
+            // WebSocket 연결
+            connectWebSocket();
+        } catch (e) {
+            console.error(e);
+            errorEl.innerText = "서버 연결 중 오류가 발생했습니다.";
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    // === 2) WebSocket + STOMP 연결 ===
+    function connectWebSocket() {
+        const socket = new SockJS("/ws");
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, function () {
+            console.log("STOMP connected");
+            connected = true;
+
+            stompClient.subscribe(`/topic/rooms/${ROOM_ID}`, function (frame) {
+                const body = JSON.parse(frame.body);
+                appendMessage(body);
+            });
+        }, function (error) {
+            console.error("STOMP error", error);
+            connected = false;
+        });
+    }
+
+    // === 3) 메시지 전송 ===
+    function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const content = input.value.trim();
+        if (!content || !connected || !stompClient) {
+            return;
+        }
+
+        stompClient.send("/app/chat", {}, JSON.stringify({
+            type: "TALK",       // MessageType enum 기준
+            roomId: ROOM_ID,
+            sessionId: sessionId,
+            content: content
+        }));
+
+        input.value = "";
+    }
+
+    // === 4) 페이지 종료 시 자동 퇴장 처리 ===
+    window.addEventListener("beforeunload", () => {
+
+        if (!connected || !stompClient || !sessionId) {
+            return; // 연결된 상태가 아니면 아무것도 하지 않음
+        }
+
+        // 세션 종료 REST API 호출
+        if (sessionId) {
+            navigator.sendBeacon(`/api/sessions/${sessionId}`, JSON.stringify({}));
+        }
+    });
+
+    function handleKeyDown(e) {
+        if (e.key === "Enter") {
+            sendMessage();
+        }
+    }
+</script>
+
+</body>
+</html>
